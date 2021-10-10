@@ -16,7 +16,9 @@ namespace Lab1
     public partial class Метод : Form
     {
         public int count; 
+
         public static List<Point> steps = new List<Point>(); // Список для точек
+
         public class Point // Сохраниние самих точек
         {
             public double x, y;
@@ -161,11 +163,9 @@ namespace Lab1
                 if (Math.Abs(b - a) < e)
                     break;
             }
-
+            return (a + b) / 2;
             //chart1.Series[1].Points.Clear(); // Очистка предыдущей точки
             //chart1.Series[1].Points.AddXY(c1, f1(c1)); // Добавление точки на график
-            return (a + b) / 2;
-
         }
 
 
@@ -185,6 +185,9 @@ namespace Lab1
 
             try
             {
+                steps.Clear(); // Очистка списка
+                count = 0; // Очистка счётчика
+
                 string a, b;
                 a = Convert.ToString(textBox1.Text);
                 b = Convert.ToString(textBox2.Text);
@@ -196,8 +199,6 @@ namespace Lab1
                     return;
                 }
 
-
-
                 double a11 = Convert.ToDouble(a);
                 double b11 = Convert.ToDouble(b);
                 double eps = Convert.ToDouble(textBox3.Text);
@@ -208,39 +209,39 @@ namespace Lab1
                 double borderB = Convert.ToDouble(textBox2.Text); // Граница B
                 double Step = 0.5; // Шаг
 
+
                 await Picture(borderA, borderB, Step);
                 label8.Text = Convert.ToString(result); // Вывод значения
 
-                count = 0;
-
+                
+                label8.Text = "";
                 chart1.Series[1].Points.AddXY(result, F(result));
 
                 Point end = new Point(result, F(result));//добавляем конечную точку
                 steps.Add(end);
 
+                
+                label7.Text = Convert.ToString(result);
                 label8.Text = $"Шаг {count}/{steps.Count}";
 
 
-                double amin, bmax;
-                PointPairList stack1 = new PointPairList();
-                PointPairList stack2 = new PointPairList();
-                GraphPane pane = zedGraphControl1.GraphPane;
-                pane.CurveList.Clear();
-                pane.GraphObjList.Clear();
+                PointPairList graph = new PointPairList();
+                PointPairList pointMin = new PointPairList();
 
-                amin = Convert.ToDouble(textBox1.Text);
-                bmax = Convert.ToDouble(textBox2.Text);
+                GraphPane pane = zedGraphControl1.GraphPane; // Панель для рисования
+                pane.CurveList.Clear(); // Очистка списка кривых
+                pane.GraphObjList.Clear();
                 
-                for (double x = amin; x <= bmax; x += 0.1) // Рисование графика по границам
+                for (double x = a11; x <= b11; x += 0.1) // Рисование графика по границам
                 {
-                    stack1.Add(x, F(x));
+                    graph.Add(x, F(x));
                 }
 
-                double minX = GoldenSection(double.Parse(textBox1.Text), double.Parse(textBox2.Text), double.Parse(textBox3.Text)); // Точка минимума
-                stack2.Add(minX, F(minX));
+                double minX = await Res(double.Parse(textBox1.Text), double.Parse(textBox2.Text), double.Parse(textBox3.Text)); // Точка минимума
+                pointMin.Add(minX, F(minX));
 
-                LineItem Curve = pane.AddCurve(textBox4.Text, stack1, Color.FromArgb(184, 57, 8), SymbolType.None);
-                LineItem Min = pane.AddCurve("Минимум", stack2, Color.Black, SymbolType.XCross);
+                LineItem Line = pane.AddCurve(textBox4.Text, graph, Color.FromArgb(184, 57, 8), SymbolType.None);
+                LineItem Minimum = pane.AddCurve("Минимум", pointMin, Color.Black, SymbolType.XCross);
                 
                 zedGraphControl1.AxisChange(); // Обновление графика
 
@@ -260,6 +261,17 @@ namespace Lab1
         {
             if (count >= 1)
             {
+                GraphPane pane = zedGraphControl1.GraphPane; // Панель для рисования
+                PointPairList stack3 = new PointPairList();
+
+                double qq = GoldenSection(double.Parse(textBox1.Text), double.Parse(textBox2.Text), double.Parse(textBox3.Text)); // Точка минимума
+                stack3.Add(steps[count - 1].x, steps[count - 1].y);
+                LineItem Minimum = pane.AddCurve("Промежуточная", stack3, Color.Black, SymbolType.XCross);
+                
+                zedGraphControl1.AxisChange();
+                zedGraphControl1.Invalidate(); // Обновление графика
+
+                pane.CurveList.RemoveAt(1);  // Очистка предыдущей точки
                 chart1.Series[2].Points.Clear(); // Очищаем предыдущую
                 chart1.Series[2].Points.AddXY(steps[count - 1].x, steps[count - 1].y);
                 label8.Text = $"Шаг {count}/{steps.Count}";
@@ -267,15 +279,26 @@ namespace Lab1
             }
         }
 
-
         private void button2_Click(object sender, EventArgs e) // Кнопка вперёд
         {
             if (count < steps.Count)
             {
+                GraphPane pane = zedGraphControl1.GraphPane; // Панель для рисования
+                PointPairList stack3 = new PointPairList();
+
+                double qq = GoldenSection(double.Parse(textBox1.Text), double.Parse(textBox2.Text), double.Parse(textBox3.Text)); // Точка минимума
+                stack3.Add(steps[count].x, steps[count].y);
+
+                LineItem Minimum = pane.AddCurve("Промежуточная", stack3, Color.Black, SymbolType.XCross);
+                zedGraphControl1.AxisChange();
+                zedGraphControl1.Invalidate(); // Обновление графика
+
+                pane.CurveList.RemoveAt(1); // Очистка предыдущей точки
                 chart1.Series[2].Points.Clear(); // Очищаем предыдущую
                 chart1.Series[2].Points.AddXY(steps[count].x, steps[count].y);
-                ++count;
+
                 label8.Text = $"Шаг {count}/{steps.Count}";
+                ++count;
             }
         }
     }
